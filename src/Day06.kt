@@ -7,36 +7,44 @@ const val newbornCounter = 8
 const val daysCounterPart1 = 80
 const val daysCounterPart2 = 256
 
-var recursionMap: Array<LongArray> = Array(max(daysCounterPart1, daysCounterPart2)) { LongArray(9) { -1L } }
+var recursionMap: Array<LongArray> = Array(max(daysCounterPart1, daysCounterPart2) + 1) { LongArray(9) { -1L } }
 
-fun familyCount(fishCounter: Int, daysLeft: Int): Long {
-    if (daysLeft <= fishCounter) {
-        return 1L
-    }
-
-    val updatedDaysLeft = daysLeft - fishCounter - 1
-
-    if (recursionMap[updatedDaysLeft][newbornCounter] == -1L) {
-        recursionMap[updatedDaysLeft][newbornCounter] = familyCount(newbornCounter, updatedDaysLeft)
-    }
-
-    if (recursionMap[updatedDaysLeft][resetCounter] == -1L) {
-        recursionMap[updatedDaysLeft][resetCounter] = familyCount(resetCounter, updatedDaysLeft)
-    }
-
-    return recursionMap[updatedDaysLeft][newbornCounter] + recursionMap[updatedDaysLeft][resetCounter]
+fun preprocessing() {
+    recursionMap.forEachIndexed { dayIndex, counters -> run {
+        counters.forEachIndexed { counterIndex, _ -> run {
+            if (dayIndex <= counterIndex) {
+                recursionMap[dayIndex][counterIndex] = 1
+            } else {
+                val updatedDaysLeft = dayIndex - counterIndex - 1
+                recursionMap[dayIndex][counterIndex] =
+                    recursionMap[updatedDaysLeft][newbornCounter] + recursionMap[updatedDaysLeft][resetCounter]
+            }
+        } }
+    }}
 }
 
 fun main() {
     val inputPath = "inputs\\input_day6.txt"
     val bufferedReader = File(inputPath).bufferedReader()
-    val fishCounters = bufferedReader.readLine().split(',').map { it.toInt() }.toMutableList()
+    val fishCounters = bufferedReader.readLine().split(',').map { it.toInt() }
+
+    val fishMap: MutableMap<Int, Int> = mutableMapOf()
+
+    fishCounters.forEach {
+        when (val count = fishMap[it])
+        {
+            null -> fishMap[it] = 0
+            else -> fishMap[it] = count + 1
+        }
+    }
+
+    preprocessing()
 
     // Part 1
-    val childrenCountPart1 = fishCounters.sumOf { familyCount(it, daysCounterPart1) }
+    val childrenCountPart1 = fishMap.map { it.value * recursionMap[daysCounterPart1][it.key] }.sum()
     println(childrenCountPart1)
 
     // Part 2
-    val childrenCountPart2 = fishCounters.sumOf { familyCount(it, daysCounterPart2) }
+    val childrenCountPart2 = fishMap.map { it.value * recursionMap[daysCounterPart2][it.key] }.sum()
     println(childrenCountPart2)
 }
